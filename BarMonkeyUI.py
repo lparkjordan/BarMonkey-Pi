@@ -46,6 +46,7 @@ class UserPage(Page):
         
         label = Label(self, text="Welcome to BarMonkey! Choose a drink.")
         dispenseButton = Button(self, text="DISPENSE", command=self.dispense)
+        doneButton = Button(self, text="DONE", command=self.logOut)
         drinkScrollbar = Scrollbar(self, orient=VERTICAL)
         self.drinkList = Listbox(self, selectmode="SINGLE", yscrollcommand=drinkScrollbar.set)
         drinkScrollbar.config(command=self.drinkList.yview)
@@ -58,11 +59,13 @@ class UserPage(Page):
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
         self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
         
         label.grid(row=0, columnspan=3)
-        self.drinkList.grid(row=1, sticky=W+E+N+S)
-        drinkScrollbar.grid(row=1, column=1, sticky=W+N+S)
+        self.drinkList.grid(row=1, rowspan=2, sticky=W+E+N+S)
+        drinkScrollbar.grid(row=1, column=1, rowspan=2, sticky=W+N+S)
         dispenseButton.grid(row=1, column=2, padx=30, pady=10, sticky=N+S+E+W)
+        doneButton.grid(row=2, column=2, padx=30, pady=10, sticky=N+S+E+W)
         # TODO switch back to inactive view after prespecified amount of time
         # TODO display a description for each drink
         
@@ -92,7 +95,9 @@ class UserPage(Page):
         for ingredient in instructions:
             # TODO use wiringpi here
             print "Activating pump " + str(ingredient[0]) + " for " + str(ingredient[1]) + " shots"
-        
+    def logOut(self):
+        self.master.ID = ""
+        self.master.inactive.show()
             
             
 # Admin page - shown when an administrator is logged in.
