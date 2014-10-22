@@ -44,23 +44,33 @@ class UserPage(Page):
         self.drinkPrices = dict(zip(drinks,prices))
         self.drinkInstructions = dict(zip(drinks,instructions))
         
-        label = Label(self, text="Welcome to BarMonkey")
+        label = Label(self, text="Welcome to BarMonkey! Choose a drink.")
         dispenseButton = Button(self, text="Dispense", command=self.dispense)
-        self.drinkList = Listbox(self, selectmode="SINGLE")
+        drinkScrollbar = Scrollbar(self, orient=VERTICAL)
+        self.drinkList = Listbox(self, selectmode="SINGLE", yscrollcommand=drinkScrollbar.set)
+        drinkScrollbar.config(command=self.drinkList.yview)
         for drink in drinks:
             self.drinkList.insert(END, drink)
         self.drinkList.selection_set(0)
+
+        # Place objects in the frame
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_rowconfigure(1, weight=1)
         
         label.grid(row=0, columnspan=3)
-        dispenseButton.grid(row=1)
-        self.drinkList.grid(row=1, column=2)
+        self.drinkList.grid(row=1, sticky=W+E+N+S)
+        drinkScrollbar.grid(row=1, column=1, sticky=W+N+S)
+        dispenseButton.grid(row=1, column=2, padx=10, pady=10, sticky=N+S+E+W)
         # TODO switch back to inactive view after prespecified amount of time
+        # TODO display a description for each drink
         
         
     def dispense(self):
         item = self.drinkList.get(self.drinkList.curselection())
         value = self.drinkPrices[item]
-        print "Dispensing " + item + " and charging " + str(value) + " to your account."
+        print "Dispensing " + item + " and charging " + str(value) + " cents to your account."
         usersList = []
 
         # Currently, to charge the user for their drink, the device loads the
