@@ -1,21 +1,27 @@
 from Tkinter import *
+import csv
 
+
+# Page superclass
 class Page(Frame):
     def __init__(self, *args, **kwargs):
         Frame.__init__(self, *args, **kwargs)
     def show(self):
         self.lift()
 
+# Inactive page - shown when no user is logged in. 
 class Inactive(Page):
     def __init__(self, *args, **kwargs):
         Page.__init__(self, *args, **kwargs)
         label = Label(self, text="Please swipe card to log in")
         label.pack(side="top", fill="both", expand=True)
 
+# User page - shown when a basic user is logged in.
 class UserPage(Page):
     def __init__(self, *args, **kwargs):
         Page.__init__(self, *args, **kwargs)
 
+        # Drinks list. TODO: Could probably make this a file.
         self.drinks = dict([("Rum and Coke", 1),
                             ("Vodka Cranberry", 2),
                             ("Tequila Sunrise", 3)]);
@@ -36,10 +42,22 @@ class UserPage(Page):
         item = self.drinkList.get(self.drinkList.curselection())
         value = self.drinks[item]
         print "Dispensing " + item + " and charging " + str(value) + " to your account."
-        with open(self.master.userFile) as f:
-            print "derp"
-            
+        usersList = []
 
+        # Currently, to charge the user for their drink, the device loads the
+        # entire list of users and changes the current user's line.
+        for name,user,owed in csv.reader(open("Users.csv")):
+            if user == self.master.ID:
+                usersList += [(name,user,int(owed)+value)]
+            else:
+                usersList += [(name,user,owed)]
+        w = csv.writer(open("Users.csv", "w"))
+        for line in usersList:
+            w.writerow(line)
+        
+            
+            
+# Admin page - shown when an administrator is logged in.
 class AdminPage(Page):
     def __init__(self, *args, **kwargs):
         Page.__init__(self, *args, **kwargs)
@@ -52,6 +70,7 @@ class App(Tk):
         
         #inactive page
         self.inactive = Inactive(self)
+        
         
         #user page
         #TODO drink selection interface
@@ -66,23 +85,16 @@ class App(Tk):
         self.userFile = "./Users.txt"
         self.adminFile = "./Admins.txt"
         
-        #buttonframe = Frame(self)
         container = Frame(self)
-        self.bind("<Key>", self.keyPress)
-        #buttonframe.pack(side="top", fill="x", expand=False)
+        
         container.pack(side="top", fill="both", expand=True)
 
         self.inactive.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         self.userpage.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
         self.adminpage.place(in_=container, x=0, y=0, relwidth=1, relheight=1)
 
-        #b1 = Button(buttonframe, text="Page 1", command=lambda: inactive.lift())
-        #b2 = Button(buttonframe, text="Page 2", command=lambda: userpage.lift())
-        #b3 = Button(buttonframe, text="Page 3", command=lambda: adminpage.lift())
-
-        #b1.pack(side="left")
-        #b2.pack(side="left")
-        #b3.pack(side="left")
+        # TODO should figure out how to change this when necessary
+        self.bind("<Key>", self.keyPress)
 
         self.inactive.show()
         
@@ -95,14 +107,12 @@ class App(Tk):
                 self.changeUser()  
 
     def changeUser(self):
-        with open(self.userFile) as f:
-            lines = f.read().splitlines()
-        newlines = []
-        for s in lines:
-            s = s.split(',')
-            newlines = newlines + s
+        userList = []
+        for name, user, owed in csv.reader(open("Users.csv")):
+            userList += [user]
         print self.ID
-        if self.ID in newlines:
+        print userList
+        if self.ID in userList:
             print "AUTHENTICATION SUCCESSFUL"
             self.userpage.show()
         else:
