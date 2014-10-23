@@ -40,19 +40,30 @@ class UserPage(Page):
                         [(3,1),(6,5),(7,5)],
                         [(2,1),(7,10)],
                         [(2,1),(4,1),(8,1)]]
+        # Descriptions of each drink
+        descriptions = ["The Frosh Special",
+                        "Self-explanatory",
+                        "Tequila and some fruit crap",
+                        "OJ and Vodka.",
+                        "DAVAI DAVAI DAVAI"]
         
         self.drinkPrices = dict(zip(drinks,prices))
         self.drinkInstructions = dict(zip(drinks,instructions))
-        
+        self.drinkDescriptions = dict(zip(drinks,descriptions))
+
+        # Define widgets
         label = Label(self, text="Welcome to BarMonkey! Choose a drink.")
-        dispenseButton = Button(self, text="DISPENSE", command=self.dispense)
-        doneButton = Button(self, text="DONE", command=self.logOut)
+        self.description = Label(self, text="Description will appear here.", height=2)
+        dispenseButton = Button(self, text="DISPENSE", command=self.dispense, bg="#006600")
+        doneButton = Button(self, text="DONE", command=self.logOut, bg="#880000")
         drinkScrollbar = Scrollbar(self, orient=VERTICAL)
         self.drinkList = Listbox(self, selectmode="SINGLE", yscrollcommand=drinkScrollbar.set)
+        self.drinkList.bind("<<ListboxSelect>>", self.setDescription)
         drinkScrollbar.config(command=self.drinkList.yview)
         for drink in drinks:
             self.drinkList.insert(END, drink)
         self.drinkList.selection_set(0)
+        
 
         # Place objects in the frame
         self.grid_columnconfigure(0, weight=1)
@@ -62,6 +73,7 @@ class UserPage(Page):
         self.grid_rowconfigure(2, weight=1)
         
         label.grid(row=0, columnspan=3)
+        self.description.grid(row=3, columnspan=3)
         self.drinkList.grid(row=1, rowspan=2, sticky=W+E+N+S)
         drinkScrollbar.grid(row=1, column=1, rowspan=2, sticky=W+N+S)
         dispenseButton.grid(row=1, column=2, padx=30, pady=10, sticky=N+S+E+W)
@@ -98,6 +110,9 @@ class UserPage(Page):
     def logOut(self):
         self.master.ID = ""
         self.master.inactive.show()
+    def setDescription(self, event):
+        item = self.drinkList.get(self.drinkList.curselection())
+        self.description.config(text=self.drinkDescriptions[item])
             
             
 # Admin page - shown when an administrator is logged in.
@@ -151,6 +166,7 @@ class App(Tk):
         if self.ID in userList:
             print "AUTHENTICATION SUCCESSFUL"
             self.userpage.show()
+            self.after(60*1000, self.userpage.logOut)
         elif self.ID in adminList:
             print "ADMINISTRATOR AUTHENTICATION SUCCESSFUL"
             self.adminpage.show()
