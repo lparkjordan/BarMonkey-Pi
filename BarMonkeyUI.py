@@ -78,9 +78,6 @@ class UserPage(Page):
         drinkScrollbar.grid(row=1, column=1, rowspan=2, sticky=W+N+S)
         dispenseButton.grid(row=1, column=2, padx=30, pady=10, sticky=N+S+E+W)
         doneButton.grid(row=2, column=2, padx=30, pady=10, sticky=N+S+E+W)
-        # TODO switch back to inactive view after prespecified amount of time
-        # TODO display a description for each drink
-        
         
     def dispense(self):
         item = self.drinkList.get(self.drinkList.curselection())
@@ -120,8 +117,55 @@ class UserPage(Page):
 class AdminPage(Page):
     def __init__(self, *args, **kwargs):
         Page.__init__(self, *args, **kwargs)
-        label = Label(self, text="This is page 3")
-        label.pack(side="top", fill="both", expand=True)
+
+        # Define widgets
+        nameLabel = Label(self, text="Name: ")
+        IDLabel = Label(self, text="ID Number: ")
+        self.balanceResult = Label(self, text="Balance goes here")
+        userButton = Button(self, text="User Page", command=self.master.userpage.show)
+        doneButton = Button(self, text="DONE", bg="#880000", command=self.logOut)
+        addUserButton = Button(self, text="Add User", command=self.addUser)
+        balanceButton = Button(self, text="Check User Balance", command=self.checkBalance)
+        primeButton = Button(self, text="Prime Pumps", command=self.primePumps)
+        cleanButton = Button(self, text="Clean Pumps", command=self.cleanPumps)
+        nameEntry = Entry(self)
+        IDEntry = Entry(self)
+
+        # Place in the grid
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(3, weight=1)
+        self.grid_columnconfigure(4, weight=2)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        
+        userButton.grid(row=0, column=0, columnspan=2, sticky=NSEW)
+        doneButton.grid(row=0, column=2, columnspan=2, sticky=NSEW)
+        nameLabel.grid(row=1, column=0, sticky=NSEW)
+        nameEntry.grid(row=1, column=1, columnspan=2, sticky=NSEW)
+        IDLabel.grid(row=2, column=0, sticky=NSEW)
+        IDEntry.grid(row=2, column=1, columnspan=2, sticky=NSEW)
+        addUserButton.grid(row=1, column=3, sticky=NSEW)
+        balanceButton.grid(row=2, column=3, sticky=NSEW)
+        self.balanceResult.grid(row=3, column=0, columnspan=4, sticky=NSEW)
+        primeButton.grid(row=0, column=4, rowspan=2, sticky=NSEW, padx=30, pady=30)
+        cleanButton.grid(row=2, column=4, rowspan=2, sticky=NSEW, padx=30, pady=30)
+        
+    def logOut(self):
+        self.master.ID = ""
+        self.master.inactive.show()
+    def addUser(self):
+        return
+    def checkBalance(self):
+        return
+    def primePumps(self):
+        return
+    def cleanPumps(self):
+        return
+        
 
 class App(Tk):
     def __init__(self,  *args, **kwargs):
@@ -147,7 +191,8 @@ class App(Tk):
         # Callbacks 
         # TODO should figure out how to change this when necessary
         self.bind("<Key>", self.keyPress)
-        
+
+    # TODO stop reading numbers after ID is full
     def keyPress(self, event):
         if event.char.isdigit():
             self.ID = self.ID + str(event.char)
@@ -166,7 +211,7 @@ class App(Tk):
         if self.ID in userList:
             print "AUTHENTICATION SUCCESSFUL"
             self.userpage.show()
-            self.after(60*1000, self.userpage.logOut)
+            self.after(60*1000, self.userpage.logOut) #TODO make this time reset with user activity
         elif self.ID in adminList:
             print "ADMINISTRATOR AUTHENTICATION SUCCESSFUL"
             self.adminpage.show()
