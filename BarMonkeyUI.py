@@ -1,4 +1,5 @@
 from Tkinter import *
+import tkMessageBox
 import csv
 # TODO add wiringpi import
 
@@ -78,7 +79,8 @@ class UserPage(Page):
         drinkScrollbar.grid(row=1, column=1, rowspan=2, sticky=W+N+S)
         dispenseButton.grid(row=1, column=2, padx=30, pady=10, sticky=N+S+E+W)
         doneButton.grid(row=2, column=2, padx=30, pady=10, sticky=N+S+E+W)
-        
+    #TODO add check balance button for users.
+    
     def dispense(self):
         item = self.drinkList.get(self.drinkList.curselection())
         value = self.drinkPrices[item]
@@ -126,10 +128,12 @@ class AdminPage(Page):
         doneButton = Button(self, text="DONE", bg="#880000", command=self.logOut)
         addUserButton = Button(self, text="Add User", command=self.addUser)
         balanceButton = Button(self, text="Check User Balance", command=self.checkBalance)
+        removeUserButton = Button(self, text="Remove User", command=self.removeUser)
+        resetBalanceButton = Button(self, text="Reset Balance", command=self.resetBalance)
         primeButton = Button(self, text="Prime Pumps", command=self.primePumps)
         cleanButton = Button(self, text="Clean Pumps", command=self.cleanPumps)
-        nameEntry = Entry(self)
-        IDEntry = Entry(self)
+        self.nameEntry = Entry(self)
+        self.IDEntry = Entry(self)
 
         # Place in the grid
         self.grid_columnconfigure(0, weight=1)
@@ -145,12 +149,13 @@ class AdminPage(Page):
         userButton.grid(row=0, column=0, columnspan=2, sticky=NSEW)
         doneButton.grid(row=0, column=2, columnspan=2, sticky=NSEW)
         nameLabel.grid(row=1, column=0, sticky=NSEW)
-        nameEntry.grid(row=1, column=1, columnspan=2, sticky=NSEW)
+        self.nameEntry.grid(row=1, column=1, columnspan=2, sticky=NSEW)
         IDLabel.grid(row=2, column=0, sticky=NSEW)
-        IDEntry.grid(row=2, column=1, columnspan=2, sticky=NSEW)
+        self.IDEntry.grid(row=2, column=1, columnspan=2, sticky=NSEW)
         addUserButton.grid(row=1, column=3, sticky=NSEW)
         balanceButton.grid(row=2, column=3, sticky=NSEW)
-        self.balanceResult.grid(row=3, column=0, columnspan=4, sticky=NSEW)
+        removeUserButton.grid(row=3, column=3, sticky=NSEW)
+        self.balanceResult.grid(row=4, column=0, columnspan=4, sticky=NSEW)
         primeButton.grid(row=0, column=4, rowspan=2, sticky=NSEW, padx=30, pady=30)
         cleanButton.grid(row=2, column=4, rowspan=2, sticky=NSEW, padx=30, pady=30)
         
@@ -158,12 +163,75 @@ class AdminPage(Page):
         self.master.ID = ""
         self.master.inactive.show()
     def addUser(self):
-        return
+        newName = self.nameEntry.get()
+        newID = self.IDEntry.get()
+        names = []
+        IDs = []
+        with open(self.master.userFile) as f:
+            for name,ID,owed in csv.reader(f):
+                names += [name]
+                IDs += [ID]
+        if (newName in names or newID in IDs):
+            print "User with that name or ID already exists!"
+        elif (len(newID) != 10):
+            print "ID number must be 10 characters!"
+        elif (len(newName) == 0):
+            print "New user needs a name!"
+        else:
+            print "User addded successfully."
+            with open(self.master.userFile, 'a') as f:
+                w = csv.writer(f)
+                w.writerow([newName, newID, 0])
     def checkBalance(self):
+        target = self.nameEntry.get()
+        names = []
+        IDs = []
+        debts = []
+        with open(self.master.userFile) as f:
+            for name,ID,owed in csv.reader(f):
+                names += [name]
+                IDs += [ID]
+                debts += [owed]
+        if target in names:
+            index = names.index(target)
+            debtString = "User balance is " + debts[index] + " cents."
+            self.balanceResult.config(text=debtString)
+    def removeUser(self):
+        target = self.nameEntry.get()
+        names = []
+        IDs = []
+        debts = []
+        with open(self.master.userFile) as f:
+            for name,ID,owed in csv.reader(f):
+                names += [name]
+                IDs += [ID]
+                debts += [owed]
+        if target in names:
+            index = names.index(target)
+            result = tkMessageBox.askquestion("Delete", "Are You Sure?", icon='warning')
+            if result == 'yes':
+                del names[index]
+                del IDs[index]
+                del debts[index]
+                with open(self.master.userFile, 'w') as f:
+                    w = csv.writer(f)
+                    usersList = zip(names, IDs, debts)
+                    for line in usersList:
+                        w.writerow(line)
+                print "Deleted"
+            else:
+                print "Cancelled"
+        else:
+            print "Target user not found."
+    def resetBalance(self):
         return
     def primePumps(self):
+        # TODO put wiringpi stuff here
+        print "Priming pumps"
         return
     def cleanPumps(self):
+        # TODO put wiringpi stuff here
+        print "Cleaning pumps"
         return
         
 
