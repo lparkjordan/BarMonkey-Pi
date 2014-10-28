@@ -23,7 +23,7 @@ class UserPage(Page):
     def __init__(self, *args, **kwargs):
         Page.__init__(self, *args, **kwargs)
 
-        # Drinks list. TODO Could probably make this a file.
+        # Drinks list. TODO make this a file.
         drinks = ["Rum and Coke",
                   "Vodka Cranberry",
                   "Tequila Sunrise",
@@ -79,7 +79,7 @@ class UserPage(Page):
         drinkScrollbar.grid(row=1, column=1, rowspan=2, sticky=W+N+S)
         dispenseButton.grid(row=1, column=2, padx=30, pady=10, sticky=N+S+E+W)
         doneButton.grid(row=2, column=2, padx=30, pady=10, sticky=N+S+E+W)
-    #TODO add check balance button for users.
+        #TODO add way for users to check their balance
     
     def dispense(self):
         item = self.drinkList.get(self.drinkList.curselection())
@@ -109,6 +109,7 @@ class UserPage(Page):
     def logOut(self):
         self.master.ID = ""
         self.master.inactive.show()
+        self.master.bind("<Key>", self.master.keyPress) # start listening for cards
     def setDescription(self, event):
         item = self.drinkList.get(self.drinkList.curselection())
         self.description.config(text=self.drinkDescriptions[item])
@@ -140,28 +141,35 @@ class AdminPage(Page):
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
-        self.grid_columnconfigure(4, weight=2)
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=2)
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=1)
-        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(3, weight=2)
+        self.grid_rowconfigure(4, weight=1)
         
-        userButton.grid(row=0, column=0, columnspan=2, sticky=NSEW)
-        doneButton.grid(row=0, column=2, columnspan=2, sticky=NSEW)
+        userButton.grid(row=0, column=0, sticky=NSEW, padx=10, pady=10)
+        doneButton.grid(row=0, column=1, sticky=NSEW, padx=10, pady=10)
+        primeButton.grid(row=0, column=2, sticky=NSEW, padx=10, pady=10)
+        cleanButton.grid(row=0, column=3, sticky=NSEW, padx=10, pady=10)
         nameLabel.grid(row=1, column=0, sticky=NSEW)
-        self.nameEntry.grid(row=1, column=1, columnspan=2, sticky=NSEW)
+        self.nameEntry.grid(row=1, column=1, columnspan=3, sticky=NSEW)
         IDLabel.grid(row=2, column=0, sticky=NSEW)
-        self.IDEntry.grid(row=2, column=1, columnspan=2, sticky=NSEW)
-        addUserButton.grid(row=1, column=3, sticky=NSEW)
-        balanceButton.grid(row=2, column=3, sticky=NSEW)
-        removeUserButton.grid(row=3, column=3, sticky=NSEW)
+        self.IDEntry.grid(row=2, column=1, columnspan=3, sticky=NSEW)
+        addUserButton.grid(row=3, column=0, sticky=NSEW, padx=10, pady=10)
+        balanceButton.grid(row=3, column=1, sticky=NSEW, padx=10, pady=10)
+        removeUserButton.grid(row=3, column=2, sticky=NSEW, padx=10, pady=10)
+        resetBalanceButton.grid(row=3, column=3, sticky=NSEW, padx=10, pady=10)
         self.balanceResult.grid(row=4, column=0, columnspan=4, sticky=NSEW)
-        primeButton.grid(row=0, column=4, rowspan=2, sticky=NSEW, padx=30, pady=30)
-        cleanButton.grid(row=2, column=4, rowspan=2, sticky=NSEW, padx=30, pady=30)
+        
         
     def logOut(self):
         self.master.ID = ""
         self.master.inactive.show()
+        self.master.inactive.focus() # prevents swiped ID from being typed in entry
+        self.nameEntry.delete(0, END)
+        self.IDEntry.delete(0, END)
+        self.master.bind("<Key>", self.master.keyPress) # start listening for cards
+        
     def addUser(self):
         newName = self.nameEntry.get()
         newID = self.IDEntry.get()
@@ -224,7 +232,30 @@ class AdminPage(Page):
         else:
             print "Target user not found."
     def resetBalance(self):
-        return
+        target = self.nameEntry.get()
+        names = []
+        IDs = []
+        debts = []
+        with open(self.master.userFile) as f:
+            for name,ID,owed in csv.reader(f):
+                names += [name]
+                IDs += [ID]
+                debts += [owed]
+        if target in names:
+            index = names.index(target)
+            result = tkMessageBox.askquestion("Reset balance", "Are You Sure?", icon='warning')
+            if result == 'yes':
+                debts[index] = 0
+                with open(self.master.userFile, 'w') as f:
+                    w = csv.writer(f)
+                    usersList = zip(names, IDs, debts)
+                    for line in usersList:
+                        w.writerow(line)
+                print "Reset"
+            else:
+                print "Cancelled"
+        else:
+            print "Target user not found."
     def primePumps(self):
         # TODO put wiringpi stuff here
         print "Priming pumps"
@@ -257,15 +288,16 @@ class App(Tk):
         self.adminFile = "./Admins.csv"
 
         # Callbacks 
-        # TODO should figure out how to change this when necessary
         self.bind("<Key>", self.keyPress)
 
-    # TODO stop reading numbers after ID is full
+    # TODO empty ID string after certain amount of time
     def keyPress(self, event):
         if event.char.isdigit():
             self.ID = self.ID + str(event.char)
             if (len(self.ID) == 10):
                 self.changeUser()
+    def ignoreKey(self, event):
+        return
 
     def changeUser(self):
         userList = []
@@ -279,9 +311,11 @@ class App(Tk):
         if self.ID in userList:
             print "AUTHENTICATION SUCCESSFUL"
             self.userpage.show()
-            self.after(60*1000, self.userpage.logOut) #TODO make this time reset with user activity
+            self.bind("<Key>", self.ignoreKey)
+            # TODO make user page and admin page automatically log out after period of inactivity
         elif self.ID in adminList:
             print "ADMINISTRATOR AUTHENTICATION SUCCESSFUL"
+            self.bind("<Key>", self.ignoreKey)
             self.adminpage.show()
         else:
             print "AUTHENTICATION FAILED"
